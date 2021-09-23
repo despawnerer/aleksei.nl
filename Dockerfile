@@ -14,5 +14,7 @@ COPY ./src ./src
 RUN rm ./target/release/deps/aleksei*
 RUN cargo build --release
 
+COPY ./resources ./resources
+
 EXPOSE 3030
 CMD ["./target/release/aleksei"]
