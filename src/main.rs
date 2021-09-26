@@ -1,119 +1,179 @@
-use warp::http::header::{CACHE_CONTROL, CONTENT_TYPE, REFRESH};
+use warp::filters;
+use warp::http::header::{CACHE_CONTROL, CONTENT_TYPE, REFRESH, SET_COOKIE};
 use warp::Filter;
 
 const IP: [u8; 4] = [0, 0, 0, 0];
 const PORT: u16 = 3030;
 
-const FRAMES: &'static [Frame] = &[
-    Frame::Dialogue("Hi", 2),
-    Frame::Dialogue("Can I ask you a question?", 2),
-    Frame::Dialogue("What do you do for a living?", 2),
-    Frame::Dialogue("Do you like it?", 2),
-    Frame::Dialogue("What would you like to do instead?", 2),
-    Frame::Dialogue("Why don’t you try?", 2),
-    Frame::Dialogue("Would you like me to show you?", 2),
-    Frame::Dialogue("Here you go:", 2),
-    Frame::Dialogue("Nice, isn’t it? Let’s do that again:", 3),
-    Frame::Dialogue("So lovely. Do you want try now?", 3),
-    Frame::Dialogue("We’re all afraid. Do it anyway.", 3),
-    Frame::Art("really-badly-drawn-cat.jpg"),
-    Frame::Dialogue("I told you. Now keep doing it.", 2),
-    Frame::Art("weirder-cat-2.jpg"),
-    Frame::Art("weirder-cat-4.jpg"),
-    Frame::Dialogue("Wait, no, not like that", 2),
-    Frame::Dialogue("Okay this is getting weird now.<br/>Shut it down.<br/>Shut it down.", 2),
-];
+const REFRESH_TARGET: &str = "1;https://voronov.nl";
 
-enum Frame {
-    Dialogue(&'static str, u8),
-    Art(&'static str),
-    End,
-}
+const COOKIE_NAME: &str = "seven";
+const MAX_BLUR: u8 = 60;
 
 #[tokio::main]
 async fn main() {
-    let init =
+    let hello =
         warp::path::end()
-            .map(|| {
-                warp::http::response::Builder::new()
-                    .header(CONTENT_TYPE, "text/html; charset=utf-8")
-                    .header(CACHE_CONTROL, "no-store")
-                    .header(REFRESH, "1;https://aleksei.nl/0")
-                    .status(200)
-                    .body("")
-                    .unwrap()
-            });
-
-    let frame =
-        warp::path::param::<usize>()
-            .and(warp::path::end())
-            .map(|n: usize| {
-                let n = if n >= FRAMES.len() { 0 } else { n };
-
-                let (frame_html, delay) = match FRAMES[n] {
-                    Frame::Dialogue(text, delay) => (format!("<div class=\"dialogue\">{}</div>", text), delay),
-                    Frame::Art(filename) => (format!("<img src=\"/resources/{}\"/>", filename), 3),
-                    Frame::End => ("<div class=\"fin\">fin</div>".to_owned(), 5),
-                };
+            .and(filters::cookie::optional(COOKIE_NAME))
+            .map(|blur: Option<u8>| {
+                let blur = blur.unwrap_or(0);
 
                 let html =
                     format!(r#"
+<!DOCTYPE html>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&display=swap" rel="stylesheet">
 
 <title>Voronov</title>
 
-<style>
-html, body {{
-    padding: 0;
+<style type="text/css">
+
+html {{
+    padding: 0 2vw;
     margin: 0;
-    width: 100%;
-    height: 100%;
 }}
 
 body {{
-    background: white;
-    color: #222;
-    overflow: hidden;
-    text-align: center;
-    font-size: 5vh;
-    font-family: 'Playfair Display', serif;
-    line-height: 5vh;
+    width: 100%;
+    height: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0;
+    font-size: 18vh;
+    font-family: 'Bree Serif', serif;
+    position: relative;
+    filter: blur({}px);
 }}
 
-.dialogue {{
+div {{
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    max-width: 100%;
 }}
 
-img {{
-    position: absolute;
-    top: 50%;
+.letter-1-1 {{
     left: 50%;
-    transform: translate(-50%, -50%);
-    height: 50vh;
+    transform: translate(-50%);
+    top: 1vh;
 }}
+
+.letter-2-1, .letter-2-2 {{
+    top: 16vh;
+    font-size: 80%;
+}}
+
+.letter-2-1 {{ left: 0; }}
+.letter-2-2 {{ right: 0; }}
+
+.letter-3-1, .letter-3-2, .letter-3-3 {{
+    top: 31vh;
+    font-size: 60%;
+}}
+
+.letter-3-1 {{ left: 0; }}
+.letter-3-2 {{ left: 50%; transform: translate(-50%); }}
+.letter-3-3 {{ right: 0; }}
+
+
+.letter-4-1, .letter-4-2, .letter-4-3, .letter-4-4 {{
+    top: 46vh;
+    font-size: 40%;
+}}
+
+.letter-4-1 {{ left: 0; }}
+.letter-4-2 {{ left: 33.33%; transform: translate(-50%); }}
+.letter-4-3 {{ left: 66.66%; transform: translate(-50%); }}
+.letter-4-4 {{ right: 0; }}
+
+
+.letter-5-1, .letter-5-2, .letter-5-3, .letter-5-4, .letter-5-5 {{
+    top: 61vh;
+    font-size: 40%;
+}}
+
+.letter-5-1 {{ left: 0; }}
+.letter-5-2 {{ left: 25%; transform: translate(-50%); }}
+.letter-5-3 {{ left: 50%; transform: translate(-50%); }}
+.letter-5-4 {{ left: 75%; transform: translate(-50%); }}
+.letter-5-5 {{ right: 0; }}
+
+
+
+.letter-6-1, .letter-6-2, .letter-6-3, .letter-6-4, .letter-6-5, .letter-6-6 {{
+    top: 76vh;
+    font-size: 20%;
+}}
+
+.letter-6-1 {{ left: 0; }}
+.letter-6-2 {{ left: 20%; transform: translate(-50%); }}
+.letter-6-3 {{ left: 40%; transform: translate(-50%); }}
+.letter-6-4 {{ left: 60%; transform: translate(-50%); }}
+.letter-6-5 {{ left: 80%; transform: translate(-50%); }}
+.letter-6-6 {{ right: 0; }}
+
+
+.letter-7-1, .letter-7-2, .letter-7-3, .letter-7-4, .letter-7-5, .letter-7-6, .letter-7-7 {{
+    top: 91vh;
+    font-size: 10%;
+}}
+
+.letter-7-1 {{ left: 0; }}
+.letter-7-2 {{ left: 16.66%; transform: translate(-50%); }}
+.letter-7-3 {{ left: 33.33%; transform: translate(-50%); }}
+.letter-7-4 {{ left: 50%; transform: translate(-50%); }}
+.letter-7-5 {{ left: 66.66%; transform: translate(-50%); }}
+.letter-7-6 {{ left: 83.33%; transform: translate(-50%); }}
+.letter-7-7 {{ right: 0; }}
+
 </style>
 
-{}
-"#, frame_html);
+<div class="letter-1-1">V</div>
 
-                let refresh_target = format!("{};https://voronov.nl/{}", delay, n);
+<div class="letter-2-1">O</div>
+<div class="letter-2-2">R</div>
+
+<div class="letter-3-1">O</div>
+<div class="letter-3-2">N</div>
+<div class="letter-3-3">O</div>
+
+<div class="letter-4-1">V</div>
+<div class="letter-4-2">A</div>
+<div class="letter-4-3">L</div>
+<div class="letter-4-4">E</div>
+
+<div class="letter-5-1">K</div>
+<div class="letter-5-2">S</div>
+<div class="letter-5-3">E</div>
+<div class="letter-5-4">I</div>
+<div class="letter-5-5">V</div>
+
+<div class="letter-6-1">O</div>
+<div class="letter-6-2">R</div>
+<div class="letter-6-3">O</div>
+<div class="letter-6-4">N</div>
+<div class="letter-6-5">O</div>
+<div class="letter-6-6">V</div>
+
+<div class="letter-7-1">A</div>
+<div class="letter-7-2">L</div>
+<div class="letter-7-3">E</div>
+<div class="letter-7-4">K</div>
+<div class="letter-7-5">S</div>
+<div class="letter-7-6">E</div>
+<div class="letter-7-7">I</div>
+"#, blur);
+
+                let next_blur = if blur >= MAX_BLUR { 0 } else { blur + 1 };
 
                 warp::http::response::Builder::new()
                     .header(CONTENT_TYPE, "text/html; charset=utf-8")
+                    .header(SET_COOKIE, format!("{}={}", COOKIE_NAME, next_blur))
                     .header(CACHE_CONTROL, "no-store")
-                    .header(REFRESH, refresh_target)
+                    .header(REFRESH, REFRESH_TARGET)
                     .status(200)
                     .body(html)
                     .unwrap()
             });
 
-    let resources = warp::path("resources").and(warp::fs::dir("resources"));
-
-    warp::serve(resources.or(init).or(frame)).run((IP, PORT)).await;
+    warp::serve(hello).run((IP, PORT)).await;
 }
