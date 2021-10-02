@@ -1,3 +1,8 @@
+use rand::{
+    rngs::ThreadRng,
+    seq::SliceRandom,
+    Rng,
+};
 use warp::filters;
 use warp::http::header::{CACHE_CONTROL, CONTENT_TYPE, REFRESH, SET_COOKIE};
 use warp::Filter;
@@ -7,167 +12,87 @@ const PORT: u16 = 3030;
 
 const REFRESH_TARGET: &str = "1;https://voronov.nl";
 
-const COOKIE_NAME: &str = "seven";
-const MAX_BLUR: u8 = 60;
+const COOKIE_NAME: &str = "eight";
+const MAX_ZALGO: u8 = 60;
+
+const TEXT: &str = "Voronov";
 
 #[tokio::main]
 async fn main() {
     let hello =
         warp::path::end()
             .and(filters::cookie::optional(COOKIE_NAME))
-            .map(|blur: Option<u8>| {
-                let blur = blur.unwrap_or(0);
+            .map(|zalgo_amount: Option<u8>| {
+                let zalgo_amount = zalgo_amount.unwrap_or(0);
+
+                let zalogified_text_verytop = zalgoify(TEXT, zalgo_amount);
+                let zalogified_text_top = zalgoify(TEXT, zalgo_amount);
+                let zalogified_text_middle = zalgoify(TEXT, zalgo_amount);
+                let zalogified_text_bottom = zalgoify(TEXT, zalgo_amount);
+                let zalogified_text_verybottom = zalgoify(TEXT, zalgo_amount);
 
                 let html =
                     format!(r#"
 <!DOCTYPE html>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&display=swap" rel="stylesheet">
 
 <title>Voronov</title>
 
 <style type="text/css">
 
 html {{
-    padding: 0 2vw;
+    padding: 0;
     margin: 0;
 }}
 
 body {{
     width: 100%;
     height: 100%;
-    max-width: 600px;
-    margin: 0 auto;
+    margin: 0;
     padding: 0;
     font-size: 18vh;
-    font-family: 'Bree Serif', serif;
-    position: relative;
-    filter: blur({}px);
+    font-family: serif;
+    overflow: hidden;
 }}
 
 div {{
     position: absolute;
-}}
-
-.letter-1-1 {{
     left: 50%;
-    transform: translate(-50%);
-    top: 1vh;
+    transform: translate(-50%, -50%);
 }}
 
-.letter-2-1, .letter-2-2 {{
-    top: 16vh;
-    font-size: 80%;
+.verytop {{
+    top: 0;
 }}
 
-.letter-2-1 {{ left: 0; }}
-.letter-2-2 {{ right: 0; }}
-
-.letter-3-1, .letter-3-2, .letter-3-3 {{
-    top: 31vh;
-    font-size: 60%;
+.top {{
+    top: 25%;
 }}
 
-.letter-3-1 {{ left: 0; }}
-.letter-3-2 {{ left: 50%; transform: translate(-50%); }}
-.letter-3-3 {{ right: 0; }}
-
-
-.letter-4-1, .letter-4-2, .letter-4-3, .letter-4-4 {{
-    top: 46vh;
-    font-size: 40%;
+.middle {{
+    top: 50%;
 }}
 
-.letter-4-1 {{ left: 0; }}
-.letter-4-2 {{ left: 33.33%; transform: translate(-50%); }}
-.letter-4-3 {{ left: 66.66%; transform: translate(-50%); }}
-.letter-4-4 {{ right: 0; }}
-
-
-.letter-5-1, .letter-5-2, .letter-5-3, .letter-5-4, .letter-5-5 {{
-    top: 61vh;
-    font-size: 40%;
+.bottom {{
+    top: 75%;
 }}
 
-.letter-5-1 {{ left: 0; }}
-.letter-5-2 {{ left: 25%; transform: translate(-50%); }}
-.letter-5-3 {{ left: 50%; transform: translate(-50%); }}
-.letter-5-4 {{ left: 75%; transform: translate(-50%); }}
-.letter-5-5 {{ right: 0; }}
-
-
-
-.letter-6-1, .letter-6-2, .letter-6-3, .letter-6-4, .letter-6-5, .letter-6-6 {{
-    top: 76vh;
-    font-size: 20%;
+.verybottom {{
+    top: 100%;
 }}
-
-.letter-6-1 {{ left: 0; }}
-.letter-6-2 {{ left: 20%; transform: translate(-50%); }}
-.letter-6-3 {{ left: 40%; transform: translate(-50%); }}
-.letter-6-4 {{ left: 60%; transform: translate(-50%); }}
-.letter-6-5 {{ left: 80%; transform: translate(-50%); }}
-.letter-6-6 {{ right: 0; }}
-
-
-.letter-7-1, .letter-7-2, .letter-7-3, .letter-7-4, .letter-7-5, .letter-7-6, .letter-7-7 {{
-    top: 91vh;
-    font-size: 10%;
-}}
-
-.letter-7-1 {{ left: 0; }}
-.letter-7-2 {{ left: 16.66%; transform: translate(-50%); }}
-.letter-7-3 {{ left: 33.33%; transform: translate(-50%); }}
-.letter-7-4 {{ left: 50%; transform: translate(-50%); }}
-.letter-7-5 {{ left: 66.66%; transform: translate(-50%); }}
-.letter-7-6 {{ left: 83.33%; transform: translate(-50%); }}
-.letter-7-7 {{ right: 0; }}
-
 </style>
 
-<div class="letter-1-1">V</div>
+<div class="verytop">{}</div>
+<div class="top">{}</div>
+<div class="middle">{}</div>
+<div class="bottom">{}</div>
+<div class="verybottom">{}</div>
+"#, zalogified_text_verytop, zalogified_text_top, zalogified_text_middle, zalogified_text_bottom, zalogified_text_verybottom);
 
-<div class="letter-2-1">O</div>
-<div class="letter-2-2">R</div>
-
-<div class="letter-3-1">O</div>
-<div class="letter-3-2">N</div>
-<div class="letter-3-3">O</div>
-
-<div class="letter-4-1">V</div>
-<div class="letter-4-2">A</div>
-<div class="letter-4-3">L</div>
-<div class="letter-4-4">E</div>
-
-<div class="letter-5-1">K</div>
-<div class="letter-5-2">S</div>
-<div class="letter-5-3">E</div>
-<div class="letter-5-4">I</div>
-<div class="letter-5-5">V</div>
-
-<div class="letter-6-1">O</div>
-<div class="letter-6-2">R</div>
-<div class="letter-6-3">O</div>
-<div class="letter-6-4">N</div>
-<div class="letter-6-5">O</div>
-<div class="letter-6-6">V</div>
-
-<div class="letter-7-1">A</div>
-<div class="letter-7-2">L</div>
-<div class="letter-7-3">E</div>
-<div class="letter-7-4">K</div>
-<div class="letter-7-5">S</div>
-<div class="letter-7-6">E</div>
-<div class="letter-7-7">I</div>
-"#, blur);
-
-                let next_blur = if blur >= MAX_BLUR { 0 } else { blur + 1 };
+                let next_zalgo_amount = if zalgo_amount >= MAX_ZALGO { 0 } else { zalgo_amount + 1 };
 
                 warp::http::response::Builder::new()
                     .header(CONTENT_TYPE, "text/html; charset=utf-8")
-                    .header(SET_COOKIE, format!("{}={}", COOKIE_NAME, next_blur))
+                    .header(SET_COOKIE, format!("{}={}", COOKIE_NAME, next_zalgo_amount))
                     .header(CACHE_CONTROL, "no-store")
                     .header(REFRESH, REFRESH_TARGET)
                     .status(200)
@@ -176,4 +101,168 @@ div {{
             });
 
     warp::serve(hello).run((IP, PORT)).await;
+}
+
+fn zalgoify(input: &str, amount: u8) -> String {
+    let mut rng = rand::thread_rng();
+
+    let cap = input.len() + input.len() * amount as usize * 3;
+
+    let mut ret = String::with_capacity(cap);
+
+    for _ in 0..amount {
+        ret.push_str("&nbsp;");
+        ret.push(*chars::ZALGO_UP.choose(&mut rng).unwrap());
+        ret.push(*chars::ZALGO_MID.choose(&mut rng).unwrap());
+        ret.push(*chars::ZALGO_DOWN.choose(&mut rng).unwrap());
+    }
+
+    for c in input.chars() {
+        ret.push(c);
+
+        for _ in 0..amount {
+            ret.push(*chars::ZALGO_UP.choose(&mut rng).unwrap());
+        }
+
+        for _ in 0..amount {
+            ret.push(*chars::ZALGO_MID.choose(&mut rng).unwrap());
+        }
+
+        for _ in 0..amount {
+            ret.push(*chars::ZALGO_DOWN.choose(&mut rng).unwrap());
+        }
+    }
+
+    for _ in 0..amount {
+        ret.push_str("&nbsp;");
+        ret.push(*chars::ZALGO_UP.choose(&mut rng).unwrap());
+        ret.push(*chars::ZALGO_MID.choose(&mut rng).unwrap());
+        ret.push(*chars::ZALGO_DOWN.choose(&mut rng).unwrap());
+    }
+
+    ret
+}
+
+mod chars {
+    pub const ZALGO_UP: &[char] = &[
+        '\u{030d}', // ̍
+        '\u{030e}', // ̎
+        '\u{0304}', // ̄
+        '\u{0305}', // ̅
+        '\u{033f}', // ̿
+        '\u{0311}', // ̑
+        '\u{0306}', // ̆
+        '\u{0310}', // ̐
+        '\u{0352}', // ͒
+        '\u{0357}', // ͗
+        '\u{0351}', // ͑
+        '\u{0307}', // ̇
+        '\u{0308}', // ̈
+        '\u{030a}', // ̊
+        '\u{0342}', // ͂
+        '\u{0343}', // ̓
+        '\u{0344}', // ̈́
+        '\u{034a}', // ͊
+        '\u{034b}', // ͋
+        '\u{034c}', // ͌
+        '\u{0303}', // ̃
+        '\u{0302}', // ̂
+        '\u{030c}', // ̌
+        '\u{0350}', // ͐
+        '\u{0300}', // ̀
+        '\u{0301}', // ́
+        '\u{030b}', // ̋
+        '\u{030f}', // ̏
+        '\u{0312}', // ̒
+        '\u{0313}', // ̓
+        '\u{0314}', // ̔
+        '\u{033d}', // ̽
+        '\u{0309}', // ̉
+        '\u{0363}', // ͣ
+        '\u{0364}', // ͤ
+        '\u{0365}', // ͥ
+        '\u{0366}', // ͦ
+        '\u{0367}', // ͧ
+        '\u{0368}', // ͨ
+        '\u{0369}', // ͩ
+        '\u{036a}', // ͪ
+        '\u{036b}', // ͫ
+        '\u{036c}', // ͬ
+        '\u{036d}', // ͭ
+        '\u{036e}', // ͮ
+        '\u{036f}', // ͯ
+        '\u{033e}', // ̾
+        '\u{035b}', // ͛
+        '\u{0346}', // ͆
+        '\u{031a}', // ̚
+    ];
+
+    pub const ZALGO_DOWN: &[char] = &[
+        '\u{0316}', // ̖
+        '\u{0317}', // ̗
+        '\u{0318}', // ̘
+        '\u{0319}', // ̙
+        '\u{031c}', // ̜
+        '\u{031d}', // ̝
+        '\u{031e}', // ̞
+        '\u{031f}', // ̟
+        '\u{0320}', // ̠
+        '\u{0324}', // ̤
+        '\u{0325}', // ̥
+        '\u{0326}', // ̦
+        '\u{0329}', // ̩
+        '\u{032a}', // ̪
+        '\u{032b}', // ̫
+        '\u{032c}', // ̬
+        '\u{032d}', // ̭
+        '\u{032e}', // ̮
+        '\u{032f}', // ̯
+        '\u{0330}', // ̰
+        '\u{0331}', // ̱
+        '\u{0332}', // ̲
+        '\u{0333}', // ̳
+        '\u{0339}', // ̹
+        '\u{033a}', // ̺
+        '\u{033b}', // ̻
+        '\u{033c}', // ̼
+        '\u{0345}', // ͅ
+        '\u{0347}', // ͇
+        '\u{0348}', // ͈
+        '\u{0349}', // ͉
+        '\u{034d}', // ͍
+        '\u{034e}', // ͎
+        '\u{0353}', // ͓
+        '\u{0354}', // ͔
+        '\u{0355}', // ͕
+        '\u{0356}', // ͖
+        '\u{0359}', // ͙
+        '\u{035a}', // ͚
+        '\u{0323}', // ̣
+    ];
+
+    pub const ZALGO_MID: &[char] = &[
+        '\u{0315}', // ̕
+        '\u{031b}', // ̛
+        '\u{0340}', // ̀
+        '\u{0341}', // ́
+        '\u{0358}', // ͘
+        '\u{0321}', // ̡
+        '\u{0322}', // ̢
+        '\u{0327}', // ̧
+        '\u{0328}', // ̨
+        '\u{0334}', // ̴
+        '\u{0335}', // ̵
+        '\u{0336}', // ̶
+        '\u{034f}', // ͏
+        '\u{035c}', // ͜
+        '\u{035d}', // ͝
+        '\u{035e}', // ͞
+        '\u{035f}', // ͟
+        '\u{0360}', // ͠
+        '\u{0362}', // ͢
+        '\u{0338}', // ̸
+        '\u{0337}', // ̷
+        '\u{0361}', // ͡
+        '\u{0489}', // ҉_
+    ];
 }
